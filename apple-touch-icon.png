@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" role="img" aria-label="Rust for Windows">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#111217"/>
+      <stop offset="100%" stop-color="#0b0b0c"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="180" height="180" rx="32" fill="url(#bg)"/>
+
+  <!-- gear-like ring -->
+  <g transform="translate(90,92)">
+    <circle r="44" fill="none" stroke="#c24a13" stroke-width="8"/>
+    <g fill="#c24a13">
+      <rect x="-2.5" y="-60" width="5" height="12" rx="2"/>
+      <rect x="-2.5" y="48" width="5" height="12" rx="2"/>
+      <rect x="-60" y="-2.5" width="12" height="5" rx="2"/>
+      <rect x="48" y="-2.5" width="12" height="5" rx="2"/>
+      <g transform="rotate(30)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+      <g transform="rotate(60)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+      <g transform="rotate(120)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+      <g transform="rotate(150)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+      <g transform="rotate(210)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+      <g transform="rotate(240)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+      <g transform="rotate(300)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+      <g transform="rotate(330)"><rect x="-2.5" y="-60" width="5" height="12" rx="2"/></g>
+    </g>
+  </g>
+
+  <!-- Monogram R -->
+  <text x="90" y="116" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="74" font-weight="900" fill="#f5f5f5" filter="url(#shadow)">R</text>
+</svg>

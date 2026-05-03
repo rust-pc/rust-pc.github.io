@@ -1,0 +1,5 @@
+# robots.txt for https://rust-pc.github.io/
+User-agent: *
+Allow: /
+
+Sitemap: https://rust-pc.github.io/sitemap.xml

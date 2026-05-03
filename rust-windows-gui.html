@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Windows GUI in Rust — WinUI, winit, egui, iced, Slint</title>
+  <meta name="description" content="Choose the right Windows GUI approach in Rust: WinUI via windows-rs, or cross-platform stacks like winit/tao with egui, iced, or Slint. Packaging and DPI tips included.">
+  <link rel="canonical" href="https://rust-pc.github.io/rust-windows-gui.html">
+  <meta name="theme-color" content="#111111">
+  <meta name="last-modified" content="">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Windows GUI in Rust — WinUI, winit, egui, iced, Slint">
+  <meta property="og:description" content="Pick between WinUI and cross-platform Rust GUI stacks. Learn trade-offs, packaging, and high-DPI considerations.">
+  <meta property="og:url" content="https://rust-pc.github.io/rust-windows-gui.html">
+  <meta property="og:image" content="/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Icons -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Styles: single block, no frameworks -->
+  <style>
+    :root{
+      --bg:#0b0b0c;
+      --panel:#0f1112;
+      --muted:#9aa4ad;
+      --text:#f5f5f5;
+      --accent:#c24a13;
+      --accent-strong:#e0783a;
+      --focus: 3px solid #ffd9c7;
+      --radius:10px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      font-size:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#070708);color:var(--text);line-height:1.45;-webkit-font-smoothing:antialiased}
+    a{color:var(--accent-strong);text-decoration:none}
+    header{background:linear-gradient(90deg,rgba(255,255,255,0.02),transparent);border-bottom:1px solid rgba(255,255,255,0.03)}
+    .container{max-width:1100px;margin:0 auto;padding:20px}
+    .header-row{display:flex;align-items:center;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand .logo{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+    nav{margin-left:auto}
+    .nav-list{display:flex;gap:12px;align-items:center}
+    .nav-link{padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:600}
+    .nav-link:hover,.nav-link:focus{background:rgba(255,255,255,0.02);color:var(--text);outline:none}
+
+    main{padding:28px 0}
+    .hero{display:grid;gap:18px;grid-template-columns:1fr 360px}
+    @media (max-width:880px){.hero{grid-template-columns:1fr} .nav-list{display:none}}
+
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.03)}
+    h1{margin:0;font-size:28px}
+    h2{margin-top:0}
+    p.lead{color:var(--muted);margin:6px 0 0}
+
+    .cta-group{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:var(--accent);color:#111;border:none;cursor:pointer;font-weight:700}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+    .btn:focus{outline:none;box-shadow:var(--focus)}
+
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
+    @media (max-width:880px){.grid{grid-template-columns:repeat(1,1fr)}}
+    .card{padding:14px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.03)}
+    .card h3{margin:0 0 8px}
+    .card p{margin:0;color:var(--muted)}
+
+    .meta{font-size:13px;color:var(--muted);margin-top:8px}
+
+    footer{padding:20px 0;border-top:1px solid rgba(255,255,255,0.02);color:var(--muted)}
+    .footer-row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    @media (max-width:600px){.footer-row{flex-direction:column;align-items:flex-start}}
+
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    /* cookie banner */
+    .cookie-banner{position:fixed;left:16px;right:16px;bottom:16px;background:linear-gradient(180deg,var(--panel),rgba(255,255,255,0.01));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:12px;align-items:center;z-index:60}
+    .cookie-actions{margin-left:auto;display:flex;gap:8px}
+  </style>
+
+  <!-- Inline SVG sprite -->
+  <svg style="display:none" aria-hidden="true">
+    <symbol id="icon-download" viewBox="0 0 24 24"><path fill="currentColor" d="M5 20h14v-2H5v2zM11 4h2v8h3l-4 4-4-4h3V4z"/></symbol>
+    <symbol id="icon-windows" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6.5l7-1v8l-7 1V6.5zm8-1.18l7-1.02v9l-7 1V5.32zM3 17.9l7-1v3.8l-7 1V17.9zm8-1l7-1v5.8l-7 1V16.9z"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><path fill="currentColor" d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+    <symbol id="icon-cookie" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 .64.08 1.26.23 1.85C3.2 12.65 2 14.67 2 17c0 3.87 3.13 7 7 7 3.31 0 6.06-2.36 6.82-5.5.29.06.59.09.9.09 3.87 0 7-3.13 7-7S19.87 2 16 2c-.61 0-1.2.08-1.77.24C13.48 2.1 12.74 2 12 2z"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/></symbol>
+  </svg>
+
+  <!-- JSON-LD structured data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {"@type": "Organization","name": "Rust for Windows (Unofficial Guide)","url": "https://rust-pc.github.io/","logo": "https://rust-pc.github.io/favicon.svg"},
+      {"@type": "WebSite","url": "https://rust-pc.github.io/","name": "Rust for Windows","potentialAction": {"@type": "SearchAction","target": "https://rust-pc.github.io/?s={search_term_string}","query-input": "required name=search_term_string"}},
+      {"@type": "SoftwareApplication","name": "rustup-init (Rust toolchain bootstrapper)","operatingSystem": ["Windows 10","Windows 11","Windows Server"],"applicationCategory": "DeveloperTool","description": "Rust toolchain installer for Windows (x86_64-pc-windows-msvc). Download the official rustup-init.exe bootstrapper.","downloadUrl": "https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe","softwareVersion": "latest","url": "https://rust-pc.github.io/rust-windows-gui.html","author": {"@type":"Organization","name":"Rust for Windows (Unofficial Guide)"}},
+      {"@type": "BreadcrumbList","itemListElement": [
+        {"@type":"ListItem","position":1,"name":"Home","item":"https://rust-pc.github.io/"},
+        {"@type":"ListItem","position":2,"name":"Windows GUI in Rust","item":"https://rust-pc.github.io/rust-windows-gui.html"}
+      ]},
+      {"@type":"FAQPage","mainEntity":[
+        {"@type":"Question","name":"Should I choose WinUI or a cross-platform UI?","acceptedAnswer":{"@type":"Answer","text":"Choose WinUI if you want a native Windows look and deep platform features. Pick winit/tao with egui, iced or Slint for simpler distribution and cross-platform support."}},
+        {"@type":"Question","name":"Do I need the Windows App SDK for WinUI?","acceptedAnswer":{"@type":"Answer","text":"Yes, WinUI relies on the Windows App SDK and related runtimes. You can package them with MSIX or use framework-dependent installs."}},
+        {"@type":"Question","name":"How do I handle high DPI?","acceptedAnswer":{"@type":"Answer","text":"Enable per-monitor DPI awareness and use logical-to-physical scaling provided by your chosen toolkit (winit/egui/iced/Slint or WinUI settings)."}},
+        {"@type":"Question","name":"What about code signing and SmartScreen?","acceptedAnswer":{"@type":"Answer","text":"Sign your binaries and installers (OV/EV certificates) and prefer MSIX for modern packaging to reduce prompts."}}
+      ]},
+      {"@type":"HowTo","name":"Choose a Windows GUI approach in Rust","step":[
+        {"@type":"HowToStep","name":"Define your target","itemListElement":[{"@type":"HowToDirection","text":"Decide between Windows-only (WinUI) or cross-platform (winit/tao with a UI layer)."}]},
+        {"@type":"HowToStep","name":"Plan distribution","itemListElement":[{"@type":"HowToDirection","text":"For WinUI, prepare the Windows App SDK and MSIX packaging. For cross-platform, bundle runtime assets per toolkit guidance."}]},
+        {"@type":"HowToStep","name":"Validate DPI and accessibility","itemListElement":[{"@type":"HowToDirection","text":"Test on multi-DPI setups and ensure keyboard navigation, labels and contrast meet accessibility needs."}]},
+        {"@type":"HowToStep","name":"Build and sign","itemListElement":[{"@type":"HowToDirection","text":"Compile in a Developer shell and sign the resulting binaries or MSIX before distribution."}]}
+      ]}
+    ]
+  }
+  </script>
+
+  <!-- GA4 placeholder and config -->
+  <script>
+    window.GA_MEASUREMENT_ID = 'G-F3FYYBX28E';
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){window.dataLayer.push(arguments)}
+  </script>
+</head>
+<body>
+  <header>
+    <div class="container header-row">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">R</div>
+        <div>
+          <div style="font-weight:800">Rust for Windows</div>
+          <div style="font-size:12px;color:var(--muted)">Unofficial guide • Native Windows tooling</div>
+        </div>
+      </div>
+
+      <nav aria-label="Main navigation">
+        <ul class="nav-list" role="menubar">
+          <li><a class="nav-link" href="install-rust-on-windows.html">Install Rust</a></li>
+          <li><a class="nav-link" href="rust-windows-quickstart.html">Quickstart</a></li>
+          <li><a class="nav-link" href="win32-winrt-rust.html">Win32 & WinRT</a></li>
+          <li><a class="nav-link" href="rust-windows-gui.html" aria-current="page">Windows GUI</a></li>
+          <li><a class="nav-link" href="package-sign-rust-windows.html">Package & Sign</a></li>
+          <li><a class="nav-link" href="rust-windows-troubleshooting.html">Troubleshoot</a></li>
+          <li><a class="nav-link" href="rust-vs-cpp-windows.html">Rust vs C++</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="panel">
+        <h1>Windows GUI in Rust — WinUI, winit, egui, iced, Slint</h1>
+        <p class="lead">Pick a UI path for Windows apps: native WinUI via windows-rs or cross‑platform stacks like winit/tao with egui, iced, or Slint. Understand trade-offs, packaging, and DPI.</p>
+
+        <div class="cta-group">
+          <button class="btn" onclick="fileDownload('rustup-init.exe','https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe')">
+            <svg width="16" height="16" aria-hidden="true"><use href="#icon-download"></use></svg>
+            Download rustup-init.exe
+          </button>
+          <a class="btn secondary" href="win32-winrt-rust.html">Use Windows APIs</a>
+          <a class="btn secondary" href="package-sign-rust-windows.html">Package & Sign</a>
+        </div>
+        <div class="meta">File: rustup-init.exe • Source: rust-lang.org • <span id="lm">Last updated: —</span></div>
+      </div>
+
+      <aside>
+        <div class="panel">
+          <h3>TL;DR</h3>
+          <ol style="padding-left:18px;margin:8px 0 0">
+            <li>WinUI = native Windows feel; cross‑platform = simpler packaging, wider reach.</li>
+            <li>Plan MSIX for WinUI; for others, bundle assets per toolkit.</li>
+            <li>Test high‑DPI and accessibility early.</li>
+          </ol>
+        </div>
+        <div style="height:12px"></div>
+        <div class="panel">
+          <h3>Also read</h3>
+          <ul style="margin:8px 0 0;padding-left:18px;color:var(--muted)">
+            <li><a href="win32-winrt-rust.html">Win32 & WinRT with Rust</a></li>
+            <li><a href="rust-windows-quickstart.html">Rust for Windows Quickstart</a></li>
+            <li><a href="package-sign-rust-windows.html">Package & Sign</a></li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+
+    <section style="margin-top:20px" class="panel">
+      <h2>Choosing your GUI path</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>WinUI (Windows App SDK)</h3>
+          <p>Native Windows look, deep platform access, modern controls. Requires Windows App SDK runtime and MSIX packaging for best experience.</p>
+        </div>
+        <div class="card">
+          <h3>winit/tao + egui</h3>
+          <p>Immediate‑mode UI, fast iteration, low boilerplate. Great for tools, editors, launchers with custom rendering.</p>
+        </div>
+        <div class="card">
+          <h3>iced</h3>
+          <p>Declarative UI with a widget tree, good structure for multi‑screen apps. Cross‑platform with a native feel.</p>
+        </div>
+        <div class="card">
+          <h3>Slint</h3>
+          <p>Declarative UI language, native rendering backends, efficient for desktop and embedded scenarios.</p>
+        </div>
+      </div>
+    </section>
+
+    <section style="margin-top:18px" class="panel">
+      <h2>Packaging & distribution</h2>
+      <ul>
+        <li>WinUI: Prefer <strong>MSIX</strong>. Ship the Windows App SDK as framework‑dependent or include it in your package.</li>
+        <li>winit/egui/iced/Slint: Classic installers (MSI/NSIS/Inno) or portable zips work well. Sign your binaries.</li>
+        <li>Enable <strong>code signing</strong> to reduce SmartScreen friction. EV certs provide the fastest reputation building.</li>
+      </ul>
+      <p class="meta">Need a release checklist? See <a href="package-sign-rust-windows.html">Package & Sign</a>.</p>
+    </section>
+
+    <section style="margin-top:18px" class="panel">
+      <h2>DPI, accessibility, and performance</h2>
+      <ul>
+        <li>Set per‑monitor DPI awareness to avoid blurry UIs on 4K displays.</li>
+        <li>Verify keyboard navigation and labels for assistive tech users.</li>
+        <li>Profile first paints and event loops (especially for immediate‑mode UIs).</li>
+      </ul>
+    </section>
+
+    <section style="margin-top:18px" class="panel">
+      <h2>Next steps</h2>
+      <ul>
+        <li>Integrate native APIs: <a href="win32-winrt-rust.html">windows-rs in Practice</a>.</li>
+        <li>Plan your installer and signing: <a href="package-sign-rust-windows.html">Packaging guide</a>.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-row">
+      <div>
+        <div style="font-weight:700">Rust for Windows</div>
+        <div style="font-size:13px;color:var(--muted)">© 2026 • Unofficial guide</div>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center">
+        <a class="muted" href="/privacy.html">Privacy</a>
+        <a class="muted" href="/terms.html">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Cookie banner -->
+  <div id="cookie" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent" style="display:none">
+    <div style="display:flex;gap:12px;align-items:center">
+      <svg width="22" height="22" aria-hidden="true"><use href="#icon-cookie"></use></svg>
+      <div>
+        <div style="font-weight:700">We use cookies & analytics</div>
+        <div class="muted" style="font-size:13px">Allow analytics to help improve the guides. You can change this later.</div>
+      </div>
+    </div>
+    <div class="cookie-actions">
+      <button class="btn" id="accept">Accept</button>
+      <button class="btn secondary" id="decline">Decline</button>
+      <button class="btn secondary" id="closeCookie" aria-label="Close cookie banner"><svg width="12" height="12"><use href="#icon-close"></use></svg></button>
+    </div>
+  </div>
+
+  <script>
+    // Update last-modified meta and label
+    (function(){
+      var lm = document.lastModified || new Date().toISOString();
+      var meta = document.querySelector('meta[name="last-modified"]');
+      if(meta) meta.setAttribute('content', lm);
+      var el = document.getElementById('lm');
+      if(el) el.textContent = 'Last updated: ' + lm;
+    })();
+
+    // Consent storage
+    var cookieEl = document.getElementById('cookie');
+    function getConsent(){try{return localStorage.getItem('rwp_consent')}catch(e){return null}}
+    function setConsent(val){try{localStorage.setItem('rwp_consent', val)}catch(e){} updateBanner();}
+    function updateBanner(){ var c = getConsent(); cookieEl.style.display = (c===null?'flex':'none'); }
+    document.getElementById('accept').addEventListener('click', function(){ setConsent('accepted'); loadGA(); });
+    document.getElementById('decline').addEventListener('click', function(){ setConsent('declined'); });
+    document.getElementById('closeCookie').addEventListener('click', function(){ setConsent('declined'); });
+    updateBanner();
+
+    // GA lazy loader
+    function loadGA(){
+      if(window._ga_loaded) return; window._ga_loaded = true;
+      var id = window.GA_MEASUREMENT_ID; if(!id) return;
+      var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id='+id;
+      s.onload = function(){ window.dataLayer = window.dataLayer || []; function gtag(){window.dataLayer.push(arguments)} window.gtag = gtag; gtag('js', new Date()); gtag('config', id, { 'anonymize_ip': true }); };
+      document.head.appendChild(s);
+    }
+
+    // Fire download event and start file download
+    function fileDownload(filename, url){
+      try{
+        if(typeof gtag === 'function'){
+          gtag('event','file_download', {event_category:'downloads', event_label: filename, file_url: url});
+        } else {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push(['event','file_download', {event_category:'downloads', event_label: filename, file_url: url}]);
+        }
+      }catch(e){console.warn(e)}
+      var a = document.createElement('a'); a.href = url; a.rel = 'noopener noreferrer'; a.download = filename; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    if(getConsent()==='accepted') loadGA();
+  </script>
+</body>
+</html>

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Rust for Windows — Install & Build Native Apps</title>
+  <meta name="description" content="Install Rust on Windows, build native apps with windows-rs, packaging, signing and quickstart guides. Download rustup for x86_64-msvc.">
+  <link rel="canonical" href="https://rust-pc.github.io/">
+  <meta name="theme-color" content="#111111">
+  <meta name="last-modified" content="">
+
+  <!-- Open Graph / Twitter (images will be generated later) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Rust for Windows — Install & Build Native Apps">
+  <meta property="og:description" content="Install Rust on Windows, build native apps with windows-rs, packaging, signing and quickstart guides.">
+  <meta property="og:image" content="/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <!-- Icons (files will be generated later and placed in root) -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+  <!-- Embedded stylesheet (single style block, no frameworks) -->
+  <style>
+    :root{
+      --bg:#0b0b0c; /* dark background */
+      --panel:#0f1112;
+      --muted:#9aa4ad;
+      --text:#f5f5f5;
+      --accent:#c24a13; /* rust-like orange accent */
+      --accent-strong:#e0783a;
+      --focus: 3px solid #ffd9c7;
+      --radius:10px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      font-size:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;padding:0;background:linear-gradient(180deg,var(--bg),#070708);color:var(--text);line-height:1.45;-webkit-font-smoothing:antialiased;}
+    a{color:var(--accent-strong);text-decoration:none}
+    header{background:linear-gradient(90deg,rgba(255,255,255,0.02),transparent);border-bottom:1px solid rgba(255,255,255,0.03)}
+    .container{max-width:1100px;margin:0 auto;padding:20px}
+    .header-row{display:flex;align-items:center;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand .logo{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
+    nav{margin-left:auto}
+    .nav-list{display:flex;gap:12px;align-items:center}
+    .nav-link{padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:600}
+    .nav-link:hover,.nav-link:focus{background:rgba(255,255,255,0.02);color:var(--text);outline:none}
+
+    main{padding:28px 0}
+    .hero{display:grid;gap:18px;grid-template-columns:1fr 360px}
+    @media (max-width:880px){.hero{grid-template-columns:1fr} .nav-list{display:none}}
+
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.03)}
+    h1{margin:0;font-size:28px}
+    p.lead{color:var(--muted);margin:6px 0 0}
+
+    .cta-group{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:var(--accent);color:#111;border:none;cursor:pointer;font-weight:700}
+    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+    .btn:focus{outline:none;box-shadow:var(--focus)}
+
+    .meta{font-size:13px;color:var(--muted);margin-top:8px}
+    .download-box{display:flex;flex-direction:column;gap:12px}
+
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+    @media (max-width:880px){.grid{grid-template-columns:repeat(1,1fr)}}
+    .card{padding:14px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.03)}
+    .card h3{margin:0 0 8px}
+    .card p{margin:0;color:var(--muted)}
+
+    footer{padding:20px 0;border-top:1px solid rgba(255,255,255,0.02);color:var(--muted)}
+    .footer-row{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    @media (max-width:600px){.footer-row{flex-direction:column;align-items:flex-start}}
+
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    /* cookie banner */
+    .cookie-banner{position:fixed;left:16px;right:16px;bottom:16px;background:linear-gradient(180deg,var(--panel),rgba(255,255,255,0.01));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:12px;align-items:center;z-index:60}
+    .cookie-actions{margin-left:auto;display:flex;gap:8px}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+
+    /* small helpers */
+    .muted{color:var(--muted)}
+    .kbd{background:#0b0b0b;border:1px solid rgba(255,255,255,0.03);padding:4px 8px;border-radius:6px;font-weight:700}
+  </style>
+
+  <!-- Inline SVG sprite -->
+  <svg style="display:none" aria-hidden="true">
+    <symbol id="icon-download" viewBox="0 0 24 24"><path fill="currentColor" d="M5 20h14v-2H5v2zM11 4h2v8h3l-4 4-4-4h3V4z"/></symbol>
+    <symbol id="icon-windows" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6.5l7-1v8l-7 1V6.5zm8-1.18l7-1.02v9l-7 1V5.32zM3 17.9l7-1v3.8l-7 1V17.9zm8-1l7-1v5.8l-7 1V16.9z"/></symbol>
+    <symbol id="icon-info" viewBox="0 0 24 24"><path fill="currentColor" d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
+    <symbol id="icon-cookie" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 .64.08 1.26.23 1.85C3.2 12.65 2 14.67 2 17c0 3.87 3.13 7 7 7 3.31 0 6.06-2.36 6.82-5.5.29.06.59.09.9.09 3.87 0 7-3.13 7-7S19.87 2 16 2c-.61 0-1.2.08-1.77.24C13.48 2.1 12.74 2 12 2z"/></symbol>
+  </svg>
+
+  <!-- JSON-LD structured data (Organization, SoftwareApplication, Breadcrumbs, FAQ) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "Rust for Windows (Unofficial Guide)",
+        "url": "https://rust-pc.github.io/",
+        "logo": "https://rust-pc.github.io/favicon.svg",
+        "sameAs": ["https://github.com/rust-pc"]
+      },
+      {
+        "@type": "WebSite",
+        "url": "https://rust-pc.github.io/",
+        "name": "Rust for Windows",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://rust-pc.github.io/?s={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "name": "rustup-init (Rust toolchain bootstrapper)",
+        "operatingSystem": ["Windows 10","Windows 11","Windows Server"],
+        "applicationCategory": "DeveloperTool",
+        "description": "Rust toolchain installer for Windows (x86_64-pc-windows-msvc). Download the official rustup-init.exe bootstrapper.",
+        "downloadUrl": "https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe",
+        "softwareVersion": "latest",
+        "url": "https://rust-pc.github.io/",
+        "author": {"@type":"Organization","name":"Rust for Windows (Unofficial Guide)"}
+      },
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {"@type":"ListItem","position":1,"name":"Home","item":"https://rust-pc.github.io/"}
+        ]
+      }
+    ]
+  }
+  </script>
+
+  <!-- GA4 loader will be injected after consent. We store the GA ID here -->
+  <script>
+    window.GA_MEASUREMENT_ID = 'G-F3FYYBX28E';
+    // Minimal gtag placeholder that queues events until real gtag loaded
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){window.dataLayer.push(arguments)}
+  </script>
+
+</head>
+<body>
+  <header>
+    <div class="container header-row">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">R</div>
+        <div>
+          <div style="font-weight:800">Rust for Windows</div>
+          <div style="font-size:12px;color:var(--muted)">Unofficial guide • Native Windows tooling</div>
+        </div>
+      </div>
+
+      <nav aria-label="Main navigation">
+        <ul class="nav-list" role="menubar">
+          <li><a class="nav-link" href="install-rust-on-windows.html">Install Rust</a></li>
+          <li><a class="nav-link" href="rust-windows-quickstart.html">Quickstart</a></li>
+          <li><a class="nav-link" href="win32-winrt-rust.html">Win32 & WinRT</a></li>
+          <li><a class="nav-link" href="rust-windows-gui.html">Windows GUI</a></li>
+          <li><a class="nav-link" href="package-sign-rust-windows.html">Package & Sign</a></li>
+          <li><a class="nav-link" href="rust-windows-troubleshooting.html">Troubleshoot</a></li>
+          <li><a class="nav-link" href="rust-vs-cpp-windows.html">Rust vs C++</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div>
+        <div class="panel">
+          <h1>Rust for Windows — Install & Build Native Apps</h1>
+          <p class="lead">Get Rust running on Windows, compile native apps with MSVC toolchain, use windows-rs bindings and package your release for distribution.</p>
+
+          <div class="cta-group">
+            <button class="btn" id="download-primary" onclick="startDownload()" aria-label="Download rustup-init.exe">
+              <svg width="16" height="16" aria-hidden="true"><use href="#icon-download"></use></svg>
+              Download rustup-init.exe
+            </button>
+            <a class="btn secondary" href="install-rust-on-windows.html">Installation guide</a>
+            <a class="btn secondary" href="rust-windows-quickstart.html">Quickstart</a>
+          </div>
+
+          <div class="meta">Official bootstrapper: <code class="muted">rustup-init.exe</code> • <span id="lm">Last updated: —</span></div>
+
+          <div class="grid" aria-hidden="false">
+            <div class="card">
+              <h3>Why Rust on Windows?</h3>
+              <p>Memory safety, modern tooling, and native performance for Windows desktop and system apps.</p>
+            </div>
+            <div class="card">
+              <h3>Windows Tooling</h3>
+              <p>MSVC toolchain, Windows SDK, Visual Studio Build Tools and cargo ecosystem explained.</p>
+            </div>
+            <div class="card">
+              <h3>Packaging & Signing</h3>
+              <p>How to create MSI/MSIX packages, sign your binaries and avoid SmartScreen warnings.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="panel download-box" aria-label="Download box">
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg width="28" height="28" aria-hidden="true"><use href="#icon-windows"></use></svg>
+            <div>
+              <div style="font-weight:800">rustup-init for x86_64-pc-windows-msvc</div>
+              <div class="muted" style="font-size:13px">Official Rust bootstrapper (windows-msvc)</div>
+            </div>
+          </div>
+
+          <div>
+            <button class="btn" onclick="fileDownload('rustup-init.exe','https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe')">
+              <svg width="16" height="16" aria-hidden="true"><use href="#icon-download"></use></svg>
+              Direct download
+            </button>
+          </div>
+
+          <div class="meta">Size: approx. small • Verified source: rust-lang.org</div>
+        </div>
+
+        <div style="height:12px"></div>
+
+        <div class="panel">
+          <h3>Quick links</h3>
+          <ul style="margin:8px 0 0;padding-left:18px;color:var(--muted)">
+            <li><a href="install-rust-on-windows.html">MSVC Toolchain Setup</a></li>
+            <li><a href="rust-windows-quickstart.html">First Native App</a></li>
+            <li><a href="package-sign-rust-windows.html">Package & Sign</a></li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+
+    <section style="margin-top:20px">
+      <div class="panel">
+        <h2>TL;DR</h2>
+        <ol>
+          <li>Download the official rustup-init.exe (MSVC) using the button above.</li>
+          <li>Run the installer and follow prompts to add MSVC toolchain.</li>
+          <li>Open a Developer PowerShell, run <span class="kbd">cargo new</span> and build your native app.</li>
+        </ol>
+
+        <h3 style="margin-top:12px">Related guides</h3>
+        <p class="muted">Deep dives and troubleshooting for Windows developers — see navigation above.</p>
+      </div>
+    </section>
+
+    <section style="margin-top:18px" class="panel">
+      <h2>What this site is</h2>
+      <p class="muted">An independent, unofficial guide focused on getting Rust working smoothly on Windows systems and shipping native applications. Not affiliated with the Rust Foundation or rust-lang.org.</p>
+      <p class="muted">For the official rustup installer, we link directly to the official rust-lang distribution files.</p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-row">
+      <div>
+        <div style="font-weight:700">Rust for Windows</div>
+        <div style="font-size:13px;color:var(--muted)">© 2026 • Unofficial guide</div>
+      </div>
+
+      <div style="display:flex;gap:12px;align-items:center">
+        <a class="muted" href="/privacy.html">Privacy</a>
+        <a class="muted" href="/terms.html">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Cookie banner -->
+  <div id="cookie" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent" style="display:none">
+    <div style="display:flex;gap:12px;align-items:center">
+      <svg width="22" height="22" aria-hidden="true"><use href="#icon-cookie"></use></svg>
+      <div>
+        <div style="font-weight:700">We use cookies & analytics</div>
+        <div class="muted" style="font-size:13px">Allow analytics to help improve the guides. You can change this later.</div>
+      </div>
+    </div>
+    <div class="cookie-actions">
+      <button class="btn" id="accept">Accept</button>
+      <button class="btn secondary" id="decline">Decline</button>
+      <button class="btn secondary" id="closeCookie" aria-label="Close cookie banner"><svg width="12" height="12"><use href="#icon-close"></use></svg></button>
+    </div>
+  </div>
+
+  <script>
+    // Update last-modified meta and visible label
+    (function(){
+      var lm = document.lastModified || new Date().toISOString();
+      var meta = document.querySelector('meta[name="last-modified"]');
+      if(meta) meta.setAttribute('content', lm);
+      var el = document.getElementById('lm');
+      if(el) el.textContent = 'Last updated: ' + lm;
+    })();
+
+    // Cookie / consent logic
+    var cookieEl = document.getElementById('cookie');
+    function getConsent(){try{return localStorage.getItem('rwp_consent')}catch(e){return null}}
+    function setConsent(val){try{localStorage.setItem('rwp_consent', val)}catch(e){}
+      updateBanner();}
+    function updateBanner(){
+      var c = getConsent();
+      if(c===null){cookieEl.style.display='flex'}else{cookieEl.style.display='none'}
+    }
+    document.getElementById('accept').addEventListener('click', function(){ setConsent('accepted'); loadGA(); });
+    document.getElementById('decline').addEventListener('click', function(){ setConsent('declined'); });
+    document.getElementById('closeCookie').addEventListener('click', function(){ setConsent('declined'); });
+    updateBanner();
+
+    // GA lazy loader
+    function loadGA(){
+      if(window._ga_loaded) return;
+      window._ga_loaded = true;
+      var id = window.GA_MEASUREMENT_ID;
+      if(!id) return;
+      var s = document.createElement('script');
+      s.async = true;
+      s.src = 'https://www.googletagmanager.com/gtag/js?id='+id;
+      s.onload = function(){
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){window.dataLayer.push(arguments)}
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', id, { 'anonymize_ip': true });
+      };
+      document.head.appendChild(s);
+    }
+
+    // File download wrapper that fires gtag event
+    function fileDownload(filename, url){
+      try{
+        // gtag event if available or queued
+        if(typeof gtag === 'function'){
+          gtag('event','file_download', {event_category:'downloads', event_label: filename, file_url: url});
+        } else {
+          // push to dataLayer queue (gtag placeholder)
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push(['event','file_download', {event_category:'downloads', event_label: filename, file_url: url}]);
+        }
+      }catch(e){console.warn(e)}
+      // Start download in a new tab/window to respect GitHub Pages hosting
+      var a = document.createElement('a');
+      a.href = url;
+      a.rel = 'noopener noreferrer';
+      a.download = filename;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    // Primary button uses startDownload to include analytics logic
+    function startDownload(){ fileDownload('rustup-init.exe','https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe'); }
+
+    // If user previously accepted, load GA immediately
+    if(getConsent()==='accepted') loadGA();
+
+    // Accessibility: allow keyboard focus outlines
+    document.addEventListener('keydown', function(e){
+      if(e.key==='Tab') document.body.classList.add('show-focus');
+    });
+  </script>
+</body>
+</html>
