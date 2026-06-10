@@ -1,307 +1,56 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Win32 & WinRT with Rust — windows-rs in Practice</title>
-  <meta name="description" content="Use Rust to call Win32 and WinRT APIs on Windows through windows-rs and windows-sys. Learn capabilities, crate choices, and common pitfalls.">
-  <link rel="canonical" href="https://rust-pc.github.io/win32-winrt-rust.html">
-  <meta name="theme-color" content="#111111">
-  <meta name="last-modified" content="">
-
-  <!-- Open Graph / Twitter -->
-  <meta property="og:type" content="article">
-  <meta property="og:title" content="Win32 & WinRT with Rust — windows-rs in Practice">
-  <meta property="og:description" content="Call Windows APIs from Rust using windows-rs. Pick the right crate, avoid common pitfalls, and ship native apps.">
-  <meta property="og:url" content="https://rust-pc.github.io/win32-winrt-rust.html">
-  <meta property="og:image" content="/og-image.png">
-  <meta name="twitter:card" content="summary_large_image">
-
-  <!-- Icons -->
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="shortcut icon" href="/favicon.ico">
-  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-
-  <!-- Styles: single block, no frameworks -->
-  <style>
-    :root{
-      --bg:#0b0b0c;
-      --panel:#0f1112;
-      --muted:#9aa4ad;
-      --text:#f5f5f5;
-      --accent:#c24a13;
-      --accent-strong:#e0783a;
-      --focus: 3px solid #ffd9c7;
-      --radius:10px;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      font-size:16px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{margin:0;background:linear-gradient(180deg,var(--bg),#070708);color:var(--text);line-height:1.45;-webkit-font-smoothing:antialiased}
-    a{color:var(--accent-strong);text-decoration:none}
-    header{background:linear-gradient(90deg,rgba(255,255,255,0.02),transparent);border-bottom:1px solid rgba(255,255,255,0.03)}
-    .container{max-width:1100px;margin:0 auto;padding:20px}
-    .header-row{display:flex;align-items:center;gap:16px}
-    .brand{display:flex;align-items:center;gap:12px}
-    .brand .logo{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff}
-    nav{margin-left:auto}
-    .nav-list{display:flex;gap:12px;align-items:center}
-    .nav-link{padding:8px 12px;border-radius:8px;color:var(--muted);font-weight:600}
-    .nav-link:hover,.nav-link:focus{background:rgba(255,255,255,0.02);color:var(--text);outline:none}
-
-    main{padding:28px 0}
-    .hero{display:grid;gap:18px;grid-template-columns:1fr 360px}
-    @media (max-width:880px){.hero{grid-template-columns:1fr} .nav-list{display:none}}
-
-    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,0.03)}
-    h1{margin:0;font-size:28px}
-    p.lead{color:var(--muted);margin:6px 0 0}
-
-    .cta-group{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
-    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;background:var(--accent);color:#111;border:none;cursor:pointer;font-weight:700}
-    .btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
-    .btn:focus{outline:none;box-shadow:var(--focus)}
-
-    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:18px}
-    @media (max-width:880px){.grid{grid-template-columns:repeat(1,1fr)}}
-    .card{padding:14px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.03)}
-    .card h3{margin:0 0 8px}
-    .card p{margin:0;color:var(--muted)}
-
-    .meta{font-size:13px;color:var(--muted);margin-top:8px}
-
-    footer{padding:20px 0;border-top:1px solid rgba(255,255,255,0.02);color:var(--muted)}
-    .footer-row{display:flex;justify-content:space-between;gap:12px;align-items:center}
-    @media (max-width:600px){.footer-row{flex-direction:column;align-items:flex-start}}
-
-    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-
-    /* cookie banner */
-    .cookie-banner{position:fixed;left:16px;right:16px;bottom:16px;background:linear-gradient(180deg,var(--panel),rgba(255,255,255,0.01));padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:12px;align-items:center;z-index:60}
-    .cookie-actions{margin-left:auto;display:flex;gap:8px}
-  </style>
-
-  <!-- Inline SVG sprite -->
-  <svg style="display:none" aria-hidden="true">
-    <symbol id="icon-download" viewBox="0 0 24 24"><path fill="currentColor" d="M5 20h14v-2H5v2zM11 4h2v8h3l-4 4-4-4h3V4z"/></symbol>
-    <symbol id="icon-windows" viewBox="0 0 24 24"><path fill="currentColor" d="M3 6.5l7-1v8l-7 1V6.5zm8-1.18l7-1.02v9l-7 1V5.32zM3 17.9l7-1v3.8l-7 1V17.9zm8-1l7-1v5.8l-7 1V16.9z"/></symbol>
-    <symbol id="icon-info" viewBox="0 0 24 24"><path fill="currentColor" d="M11 17h2v-6h-2v6zm0-8h2V7h-2v2zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/></symbol>
-    <symbol id="icon-close" viewBox="0 0 24 24"><path fill="currentColor" d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></symbol>
-    <symbol id="icon-cookie" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 .64.08 1.26.23 1.85C3.2 12.65 2 14.67 2 17c0 3.87 3.13 7 7 7 3.31 0 6.06-2.36 6.82-5.5.29.06.59.09.9.09 3.87 0 7-3.13 7-7S19.87 2 16 2c-.61 0-1.2.08-1.77.24C13.48 2.1 12.74 2 12 2z"/></symbol>
-    <symbol id="icon-check" viewBox="0 0 24 24"><path fill="currentColor" d="M9 16.2l-3.5-3.5-1.4 1.4L9 19 20.3 7.7l-1.4-1.4z"/></symbol>
-  </svg>
-
-  <!-- JSON-LD structured data -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {"@type": "Organization","name": "Rust for Windows (Unofficial Guide)","url": "https://rust-pc.github.io/","logo": "https://rust-pc.github.io/favicon.svg"},
-      {"@type": "WebSite","url": "https://rust-pc.github.io/","name": "Rust for Windows","potentialAction": {"@type": "SearchAction","target": "https://rust-pc.github.io/?s={search_term_string}","query-input": "required name=search_term_string"}},
-      {"@type": "SoftwareApplication","name": "rustup-init (Rust toolchain bootstrapper)","operatingSystem": ["Windows 10","Windows 11","Windows Server"],"applicationCategory": "DeveloperTool","description": "Rust toolchain installer for Windows (x86_64-pc-windows-msvc). Download the official rustup-init.exe bootstrapper.","downloadUrl": "https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe","softwareVersion": "latest","url": "https://rust-pc.github.io/win32-winrt-rust.html","author": {"@type":"Organization","name":"Rust for Windows (Unofficial Guide)"}},
-      {"@type": "BreadcrumbList","itemListElement": [
-        {"@type":"ListItem","position":1,"name":"Home","item":"https://rust-pc.github.io/"},
-        {"@type":"ListItem","position":2,"name":"Win32 & WinRT with Rust","item":"https://rust-pc.github.io/win32-winrt-rust.html"}
-      ]},
-      {"@type":"FAQPage","mainEntity":[
-        {"@type":"Question","name":"What is windows-rs?","acceptedAnswer":{"@type":"Answer","text":"A set of Rust language projections of Windows APIs, enabling calls to Win32 and WinRT with memory safety and idiomatic Rust types."}},
-        {"@type":"Question","name":"When should I use windows-sys vs windows?","acceptedAnswer":{"@type":"Answer","text":"Use `windows` for ergonomic, feature-rich bindings. Use `windows-sys` if you want low-level FFI with minimal overhead and manage safety yourself."}},
-        {"@type":"Question","name":"Does it support COM and WinRT?","acceptedAnswer":{"@type":"Answer","text":"Yes. The projections include COM and WinRT support, letting you activate classes and interface with components using Rust types."}},
-        {"@type":"Question","name":"Can I mix with C/C++ code?","acceptedAnswer":{"@type":"Answer","text":"Yes. You can interoperate via C ABI and link to native libraries. On Windows, ensure MSVC-compatible builds for smooth linking."}}
-      ]},
-      {"@type":"HowTo","name":"Call Windows APIs from Rust using windows-rs","step":[
-        {"@type":"HowToStep","name":"Install the Rust toolchain","itemListElement":[{"@type":"HowToDirection","text":"Install Rust (MSVC) using rustup-init.exe and confirm rustc and cargo are in PATH."}]},
-        {"@type":"HowToStep","name":"Choose bindings level","itemListElement":[{"@type":"HowToDirection","text":"Decide between `windows` (ergonomic) and `windows-sys` (low-level) based on your needs."}]},
-        {"@type":"HowToStep","name":"Enable required API features","itemListElement":[{"@type":"HowToDirection","text":"Select only the Windows API namespaces you plan to call to optimize build time and binary size."}]},
-        {"@type":"HowToStep","name":"Build and validate on Windows","itemListElement":[{"@type":"HowToDirection","text":"Compile in a fresh x64 Developer shell and run your executable. Troubleshoot linker or SDK issues if any."}]}
-      ]}
-    ]
-  }
-  </script>
-
-  <!-- GA4 placeholder and config -->
-  <script>
-    window.GA_MEASUREMENT_ID = 'G-F3FYYBX28E';
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){window.dataLayer.push(arguments)}
-  </script>
-</head>
-<body>
-  <header>
-    <div class="container header-row">
-      <div class="brand">
-        <div class="logo" aria-hidden="true">R</div>
-        <div>
-          <div style="font-weight:800">Rust for Windows</div>
-          <div style="font-size:12px;color:var(--muted)">Unofficial guide • Native Windows tooling</div>
-        </div>
-      </div>
-
-      <nav aria-label="Main navigation">
-        <ul class="nav-list" role="menubar">
-          <li><a class="nav-link" href="install-rust-on-windows.html">Install Rust</a></li>
-          <li><a class="nav-link" href="rust-windows-quickstart.html">Quickstart</a></li>
-          <li><a class="nav-link" href="win32-winrt-rust.html" aria-current="page">Win32 & WinRT</a></li>
-          <li><a class="nav-link" href="rust-windows-gui.html">Windows GUI</a></li>
-          <li><a class="nav-link" href="package-sign-rust-windows.html">Package & Sign</a></li>
-          <li><a class="nav-link" href="rust-windows-troubleshooting.html">Troubleshoot</a></li>
-          <li><a class="nav-link" href="rust-vs-cpp-windows.html">Rust vs C++</a></li>
-        </ul>
-      </nav>
-    </div>
-  </header>
-
-  <main class="container">
-    <section class="hero">
-      <div class="panel">
-        <h1>Win32 & WinRT with Rust — windows-rs in Practice</h1>
-        <p class="lead">Call native Windows APIs from Rust with windows-rs projections. Pick the right crates, enable only the namespaces you need, and avoid common pitfalls.</p>
-
-        <div class="cta-group">
-          <button class="btn" onclick="fileDownload('rustup-init.exe','https://www2.softwareportal.store/MGkEQeJf')">
-            <svg width="16" height="16" aria-hidden="true"><use href="#icon-download"></use></svg>
-            Download rustup-init.exe
-          </button>
-          <a class="btn secondary" href="rust-windows-quickstart.html">Open Quickstart</a>
-          <a class="btn secondary" href="rust-windows-gui.html">Explore GUI options</a>
-        </div>
-        <div class="meta">File: rustup-init.exe • Source: rust-lang.org • <span id="lm">Last updated: —</span></div>
-      </div>
-
-      <aside>
-        <div class="panel">
-          <h3>TL;DR</h3>
-          <ol style="padding-left:18px;margin:8px 0 0">
-            <li>Install Rust (MSVC) using rustup-init.exe.</li>
-            <li>Choose `windows` for ergonomics or `windows-sys` for low-level FFI.</li>
-            <li>Enable only the API namespaces you need.</li>
-            <li>Build in an x64 Developer shell and test on Windows.</li>
-          </ol>
-        </div>
-        <div style="height:12px"></div>
-        <div class="panel">
-          <h3>Also read</h3>
-          <ul style="margin:8px 0 0;padding-left:18px;color:var(--muted)">
-            <li><a href="install-rust-on-windows.html">Install Rust on Windows</a></li>
-            <li><a href="rust-windows-gui.html">Windows GUI in Rust</a></li>
-            <li><a href="package-sign-rust-windows.html">Package & Sign</a></li>
-          </ul>
-        </div>
-      </aside>
-    </section>
-
-    <section style="margin-top:20px" class="panel">
-      <h2>What you can build with windows-rs</h2>
-      <div class="grid">
-        <div class="card"><h3>Desktop utilities</h3><p>File operations, notifications, shell integrations, services and more.</p></div>
-        <div class="card"><h3>GUI applications</h3><p>Create windows, handle input, and render UIs with frameworks or raw Win32.</p></div>
-        <div class="card"><h3>System tools</h3><p>Access processes, registry, performance counters, networking and COM objects.</p></div>
-        <div class="card"><h3>Graphics & media</h3><p>Use DirectX families and media pipelines exposed via Windows APIs.</p></div>
-      </div>
-    </section>
-
-    <section style="margin-top:18px" class="panel">
-      <h2>Choosing the right crate</h2>
-      <ul>
-        <li><strong>windows</strong> — ergonomic, safe wrappers with Rust types and patterns.</li>
-        <li><strong>windows-sys</strong> — thin, unsafe bindings close to the C ABI for maximal control.</li>
-      </ul>
-      <p class="meta">Pick based on your need for safety and ergonomics vs. minimal overhead.</p>
-    </section>
-
-    <section style="margin-top:18px" class="panel">
-      <h2>Common pitfalls and quick fixes</h2>
-      <ul>
-        <li><strong>Missing SDK headers or libraries</strong> — Ensure Windows 10/11 SDK is installed via Visual Studio Installer.</li>
-        <li><strong>Linker errors (link.exe)</strong> — Install Visual Studio Build Tools and use an x64 Developer shell.</li>
-        <li><strong>Wrong architecture</strong> — Build x64 for x64 systems and ensure matching SDK/Tools are installed.</li>
-        <li><strong>Feature bloat / slow builds</strong> — Enable only the Windows namespaces you require.</li>
-      </ul>
-      <p class="meta">Need deeper help? Visit <a href="rust-windows-troubleshooting.html">Troubleshooting</a>.</p>
-    </section>
-
-    <section style="margin-top:18px" class="panel">
-      <h2>Next steps</h2>
-      <ul>
-        <li>Pick a UI route: <a href="rust-windows-gui.html">Windows GUI in Rust</a>.</li>
-        <li>Plan your release: <a href="package-sign-rust-windows.html">Package & Sign</a>.</li>
-      </ul>
-    </section>
-  </main>
-
-  <footer>
-    <div class="container footer-row">
-      <div>
-        <div style="font-weight:700">Rust for Windows</div>
-        <div style="font-size:13px;color:var(--muted)">© 2026 • Unofficial guide</div>
-      </div>
-      <div style="display:flex;gap:12px;align-items:center">
-        <a class="muted" href="/privacy.html">Privacy</a>
-        <a class="muted" href="/terms.html">Terms</a>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Cookie banner -->
-  <div id="cookie" class="cookie-banner" role="dialog" aria-live="polite" aria-label="Cookie consent" style="display:none">
-    <div style="display:flex;gap:12px;align-items:center">
-      <svg width="22" height="22" aria-hidden="true"><use href="#icon-cookie"></use></svg>
-      <div>
-        <div style="font-weight:700">We use cookies & analytics</div>
-        <div class="muted" style="font-size:13px">Allow analytics to help improve the guides. You can change this later.</div>
-      </div>
-    </div>
-    <div class="cookie-actions">
-      <button class="btn" id="accept">Accept</button>
-      <button class="btn secondary" id="decline">Decline</button>
-      <button class="btn secondary" id="closeCookie" aria-label="Close cookie banner"><svg width="12" height="12"><use href="#icon-close"></use></svg></button>
-    </div>
-  </div>
-
-  <script>
-    // Update last-modified meta and label
-    (function(){
-      var lm = document.lastModified || new Date().toISOString();
-      var meta = document.querySelector('meta[name="last-modified"]');
-      if(meta) meta.setAttribute('content', lm);
-      var el = document.getElementById('lm');
-      if(el) el.textContent = 'Last updated: ' + lm;
-    })();
-
-    // Consent storage
-    var cookieEl = document.getElementById('cookie');
-    function getConsent(){try{return localStorage.getItem('rwp_consent')}catch(e){return null}}
-    function setConsent(val){try{localStorage.setItem('rwp_consent', val)}catch(e){} updateBanner();}
-    function updateBanner(){ var c = getConsent(); cookieEl.style.display = (c===null?'flex':'none'); }
-    document.getElementById('accept').addEventListener('click', function(){ setConsent('accepted'); loadGA(); });
-    document.getElementById('decline').addEventListener('click', function(){ setConsent('declined'); });
-    document.getElementById('closeCookie').addEventListener('click', function(){ setConsent('declined'); });
-    updateBanner();
-
-    // GA lazy loader
-    function loadGA(){
-      if(window._ga_loaded) return; window._ga_loaded = true;
-      var id = window.GA_MEASUREMENT_ID; if(!id) return;
-      var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id='+id;
-      s.onload = function(){ window.dataLayer = window.dataLayer || []; function gtag(){window.dataLayer.push(arguments)} window.gtag = gtag; gtag('js', new Date()); gtag('config', id, { 'anonymize_ip': true }); };
-      document.head.appendChild(s);
-    }
-
-    // Fire download event and start file download
-    function fileDownload(filename, url){
-      try{
-        if(typeof gtag === 'function'){
-          gtag('event','file_download', {event_category:'downloads', event_label: filename, file_url: url});
-        } else {
-          window.dataLayer = window.dataLayer || [];
-          window.dataLayer.push(['event','file_download', {event_category:'downloads', event_label: filename, file_url: url}]);
-        }
-      }catch(e){console.warn(e)}
-      var a = document.createElement('a'); a.href = url; a.rel = 'noopener noreferrer'; a.download = filename; a.target = '_blank'; document.body.appendChild(a); a.click(); a.remove();
-    }
-
-    if(getConsent()==='accepted') loadGA();
-  </script>
-</body>
-</html>
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Win32 and WinRT with Rust — windows-rs Guide for Windows</title>
+<meta name="description" content="Call Win32 and WinRT APIs from Rust using the windows and windows-sys crates. Feature flags, code examples, windows vs windows-sys comparison.">
+<meta name="robots" content="index,follow">
+<meta name="googlebot" content="index,follow">
+<link rel="canonical" href="https://rust-pc.github.io/win32-winrt-rust.html">
+<meta name="last-modified" content="2026-06-10">
+<meta property="og:title" content="Win32 and WinRT with Rust — windows-rs Guide for Windows">
+<meta property="og:description" content="Call Win32 and WinRT APIs from Rust using the windows and windows-sys crates. Feature flags, code examples, windows vs windows-sys comparison.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://rust-pc.github.io/win32-winrt-rust.html">
+<meta property="og:image" content="https://rust-pc.github.io/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" href="/favicon.svg">
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+</head><body>
+<nav class="site-nav" aria-label="Main navigation"><div class="wrap"><div class="nav-inner"><a href="/index.html" class="nav-logo" aria-label="Rust for Windows home"><div class="nav-logo-mark" aria-hidden="true">Rs</div><span class="nav-logo-name">Rust</span><span class="nav-logo-sub">for Windows</span></a><div class="nav-links" role="list"><a href="/index.html" id="nl-home" role="listitem">Download</a><a href="/install-rust-on-windows.html" id="nl-install" role="listitem">Install</a><a href="/rust-windows-gui.html" id="nl-gui" role="listitem">GUI</a><a href="/rust-cargo-windows.html" id="nl-cargo" role="listitem">Cargo</a><a href="/rust-windows-troubleshooting.html" id="nl-fix" role="listitem">Troubleshoot</a><a href="/rust-windows-faq.html" id="nl-faq" role="listitem">FAQ</a></div><a href="/index.html" class="nav-cta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> rustup-init.exe</a></div></div></nav>
+<div class="page-hero"><div class="wrap">
+<nav class="breadcrumb" aria-label="Breadcrumb"><a href="/index.html">home</a> <span aria-hidden="true">/</span> <span>win32-winrt-rust</span></nav>
+<span class="page-tag">Win32 guide</span>
+<h1>Win32 &amp; WinRT with Rust &mdash; <span>windows-rs guide for Windows</span></h1>
+<div class="answer-box">The <code>windows</code> crate (maintained by Microsoft) provides safe Rust bindings to all Win32 and WinRT APIs. Use <code>windows</code> for typed high-level access or <code>windows-sys</code> for raw unsafe bindings with no overhead.</div>
+</div></div>
+<div class="wrap"><div class="content-layout">
+<main id="main-content"><div class="section"><span class="section-label">Crates</span><h2>windows-rs vs windows-sys</h2>
+<dl class="def-list"><div class="def-item"><dt class="def-term">windows</dt><dd class="def-def">High-level typed bindings. WinRT types, COM support, method-style APIs. Recommended for most use cases.</dd></div><div class="def-item"><dt class="def-term">windows-sys</dt><dd class="def-def">Raw unsafe FFI bindings, no overhead. Function pointers, no COM. Best for minimal binary size.</dd></div><div class="def-item"><dt class="def-term">windows-rs</dt><dd class="def-def">The GitHub repository containing both crates. Often used to refer to the windows crate.</dd></div></dl>
+<div class="tbl-wrap"><table><thead><tr><th>Need</th><th>Use</th></tr></thead><tbody>
+<tr><td>WinRT APIs (UWP, modern Windows)</td><td><code>windows</code></td></tr>
+<tr><td>Classic Win32 APIs</td><td><code>windows</code> or <code>windows-sys</code></td></tr>
+<tr><td>Minimal binary, no COM</td><td><code>windows-sys</code></td></tr>
+<tr><td>COM-based APIs (Shell, DirectX setup)</td><td><code>windows</code></td></tr>
+</tbody></table></div>
+</div>
+<div class="section"><span class="section-label">Cargo.toml</span><h2>Add windows-rs to your project</h2>
+<div class="term" role="region" aria-label="Terminal"><div class="term-bar"><div class="term-dot" style="background:#ff5f56" aria-hidden="true"></div><div class="term-dot" style="background:#ffbd2e" aria-hidden="true"></div><div class="term-dot" style="background:#27c93f" aria-hidden="true"></div><span class="term-label">Cargo.toml</span></div><div class="term-body"><div><span class="t-v">[dependencies]</span></div><div><span class="t-c">windows = { version = "0.57", features = [</span></div><div><span class="t-cm">    # Win32 categories you need, e.g.:</span></div><div><span class="t-c">    "Win32_Foundation",</span></div><div><span class="t-c">    "Win32_System_Threading",</span></div><div><span class="t-c">    "Win32_UI_WindowsAndMessaging",</span></div><div><span class="t-c">    "Win32_Storage_FileSystem",</span></div><div><span class="t-c">] }</div></div></div>
+<div class="callout callout-info" role="note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Enable only the feature flags you use. windows-rs has thousands of features — enabling unnecessary ones increases compile time. Each feature maps to a Win32 header namespace.</span></div>
+</div>
+<div class="section"><span class="section-label">Example</span><h2>Call a Win32 API from Rust</h2>
+<div class="term" role="region" aria-label="Terminal"><div class="term-bar"><div class="term-dot" style="background:#ff5f56" aria-hidden="true"></div><div class="term-dot" style="background:#ffbd2e" aria-hidden="true"></div><div class="term-dot" style="background:#27c93f" aria-hidden="true"></div><span class="term-label">src/main.rs — MessageBoxW</span></div><div class="term-body"><div><span class="t-c">use windows::core::w;</span></div><div><span class="t-c">use windows::Win32::Foundation::HWND;</span></div><div><span class="t-c">use windows::Win32::UI::WindowsAndMessaging::{MessageBoxW, MB_OK};</span></div><div></div><div><span class="t-c">fn main() -> windows::core::Result<()> {</span></div><div><span class="t-c">    unsafe {</span></div><div><span class="t-c">        MessageBoxW(HWND::default(), w!("Hello!"), w!("Rust"), MB_OK);</span></div><div><span class="t-c">    }</span></div><div><span class="t-c">    Ok(())</span></div><div><span class="t-c">}</span></div></div></div>
+</div>
+<div class="section"><span class="section-label">FAQ</span><h2>Win32 questions</h2><div class="faq">
+<div class="faq-item"><details><summary>What is windows-rs and who maintains it?</summary><div class="faq-ans"><p><code>windows-rs</code> is the official Rust bindings for Windows APIs maintained by Microsoft. It lives at <a href="https://github.com/microsoft/windows-rs" rel="noopener">github.com/microsoft/windows-rs</a>. Microsoft generates the bindings directly from the Windows metadata (.winmd) files, so they are always complete and up to date.</p></div></details></div>
+<div class="faq-item"><details><summary>Do I need unsafe to use windows-rs?</summary><div class="faq-ans"><p>Most Win32 API calls require an <code>unsafe</code> block because the Win32 ABI predates Rust's safety model. WinRT APIs via windows-rs are often safe. The <code>windows</code> crate wraps many common patterns to minimise unsafe surface, but calling raw Win32 functions will always require <code>unsafe</code>.</p></div></details></div>
+</div></div>
+<div class="cta-banner" role="complementary"><div><h2>Building a GUI?</h2><p>Choose the right GUI framework for Windows.</p></div><a href="/rust-windows-gui.html" class="btn-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>GUI guide</a></div>
+<div style="margin-bottom:28px"><span class="section-label">Related guides</span><div class="rel-grid"><a href="/rust-windows-gui.html" class="rel-card"><div class="rel-title">GUI guide &rarr;</div><div class="rel-sub">WinUI & egui</div></a><a href="/rust-windows-quickstart.html" class="rel-card"><div class="rel-title">Quickstart &rarr;</div><div class="rel-sub">first app</div></a><a href="/package-sign-rust-windows.html" class="rel-card"><div class="rel-title">Package & sign &rarr;</div><div class="rel-sub">distribute</div></a></div></div></main>
+<aside class="content-sidebar" aria-label="Navigation"><div class="sb-ver"><div class="sb-ver-label">Rust stable</div><div class="sb-ver-val">1.79.0</div><div class="sb-ver-sub">x86_64-pc-windows-msvc</div></div><div class="sb-card"><div class="sb-card-title">Install</div><ul class="sb-links"><li><a href="/index.html">Download rustup</a></li><li><a href="/install-rust-on-windows.html">Install guide</a></li><li><a href="/rustup-windows.html">Rustup on Windows</a></li><li><a href="/rust-download-windows.html">Download options</a></li><li><a href="/rust-msvc-toolchain.html">MSVC toolchain</a></li><li><a href="/rust-windows-11.html">Windows 11</a></li></ul></div><div class="sb-card"><div class="sb-card-title">Develop</div><ul class="sb-links"><li><a href="/rust-windows-quickstart.html">Quickstart</a></li><li><a href="/rust-cargo-windows.html">Cargo on Windows</a></li><li><a href="/rust-windows-gui.html">GUI development</a></li><li><a href="/win32-winrt-rust.html" class="cur">Win32 & WinRT</a></li><li><a href="/rust-windows-performance.html">Performance</a></li><li><a href="/rust-cross-compile-windows.html">Cross-compile</a></li><li><a href="/package-sign-rust-windows.html">Package & sign</a></li><li><a href="/rust-wsl-vs-native.html">WSL vs native</a></li></ul></div><div class="sb-card"><div class="sb-card-title">Fix & compare</div><ul class="sb-links"><li><a href="/rust-windows-troubleshooting.html">Troubleshooting</a></li><li><a href="/rust-not-compiling-windows.html">Not compiling</a></li><li><a href="/rust-linker-error-windows.html">Linker errors</a></li><li><a href="/rust-vs-cpp-windows.html">Rust vs C++</a></li><li><a href="/rust-vs-go-windows.html">Rust vs Go</a></li><li><a href="/rust-windows-faq.html">FAQ</a></li></ul></div></aside>
+</div></div>
+<footer class="site-footer" role="contentinfo"><div class="wrap"><div class="footer-inner"><div><div class="footer-logo"><div class="footer-logo-mark" aria-hidden="true">Rs</div><span class="footer-logo-name">Rust for Windows</span></div><p class="footer-tagline">Unofficial Windows guide &mdash; not affiliated with the Rust Foundation or rust-lang.org.</p></div><div><div class="footer-col-title">Install</div><ul class="footer-links"><li><a href="/index.html">Download rustup</a></li><li><a href="/install-rust-on-windows.html">Install guide</a></li><li><a href="/rustup-windows.html">Rustup guide</a></li><li><a href="/rust-download-windows.html">Download options</a></li><li><a href="/rust-msvc-toolchain.html">MSVC toolchain</a></li><li><a href="/rust-windows-11.html">Windows 11 guide</a></li></ul></div><div><div class="footer-col-title">Develop</div><ul class="footer-links"><li><a href="/rust-windows-quickstart.html">Quickstart</a></li><li><a href="/rust-cargo-windows.html">Cargo on Windows</a></li><li><a href="/rust-windows-gui.html">GUI development</a></li><li><a href="/win32-winrt-rust.html">Win32 &amp; WinRT</a></li><li><a href="/package-sign-rust-windows.html">Package &amp; sign</a></li><li><a href="/rust-cross-compile-windows.html">Cross-compile</a></li></ul></div><div><div class="footer-col-title">Learn &amp; fix</div><ul class="footer-links"><li><a href="/rust-windows-troubleshooting.html">Troubleshooting</a></li><li><a href="/rust-not-compiling-windows.html">Not compiling</a></li><li><a href="/rust-linker-error-windows.html">Linker errors</a></li><li><a href="/rust-vs-cpp-windows.html">Rust vs C++</a></li><li><a href="/rust-vs-go-windows.html">Rust vs Go</a></li><li><a href="/rust-windows-faq.html">FAQ</a></li></ul></div></div><div class="footer-bottom"><p>Not affiliated with the Rust Foundation, rust-lang.org or Microsoft. Unofficial community guide.</p><p><strong>Affiliate disclosure:</strong> Download links may be partner links.</p></div></div></footer><div class="cookie-bar" id="cookieBar" style="display:none" role="dialog" aria-label="Cookie consent"><p>We use Google Analytics for anonymous traffic data. <a href="/rust-windows-faq.html">Privacy</a></p><div class="cookie-btns"><button class="cookie-accept" id="cookieAccept">Accept</button><button class="cookie-decline" id="cookieDecline">Decline</button></div></div><script async src="https://www.googletagmanager.com/gtag/js?id=G-F3FYYBX28E"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("consent","default",{analytics_storage:"denied",ad_storage:"denied"});gtag("js",new Date());gtag("config","G-F3FYYBX28E",{anonymize_ip:true,send_page_view:false});function grantGA(){gtag("consent","update",{analytics_storage:"granted"});gtag("event","page_view",{page_location:location.href,page_title:document.title})}document.addEventListener("DOMContentLoaded",function(){var bar=document.getElementById("cookieBar");var c=localStorage.getItem("rust_consent");if(!c){bar.style.display="flex"}else if(c==="1"){grantGA()}document.getElementById("cookieAccept").onclick=function(){localStorage.setItem("rust_consent","1");grantGA();bar.style.display="none"};document.getElementById("cookieDecline").onclick=function(){localStorage.setItem("rust_consent","0");bar.style.display="none"};});</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"Win32 and WinRT with Rust using windows-rs","description":"How to call Win32 and WinRT APIs from Rust using the windows and windows-sys crates.","url":"https://rust-pc.github.io/win32-winrt-rust.html"}</script>
+<script>var el=document.getElementById("nl-gui");if(el)el.classList.add("active");</script>
+</body></html>
